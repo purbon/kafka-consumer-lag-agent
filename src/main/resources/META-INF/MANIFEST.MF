@@ -1,0 +1,4 @@
+Agent-Class: com.purbon.kafka.lag.agent.LagExporterAgent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Premain-Class: com.purbon.kafka.lag.agent.LagExporterAgent

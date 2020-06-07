@@ -1,0 +1,28 @@
+---
+version: '2'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.4.0
+    hostname: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    build: kafka/
+    hostname: kafka
+    domainname: confluent.local
+    networks:
+      default:
+        aliases:
+          - kafka.confluent.local
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+      - 9998:29998
+      - 9999:29999
+    environment:
+      JMX_PORT: 9999
+      KAFKA_OPTS: "-javaagent:/etc/kafka/lag-exporter-agent.jar=7071:/etc/jmx-exporter/kafka.yml"
+      KAFKA_JMX_OPTS: "-Djava.rmi.server.hostname=kafka.confluent.local -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.net.preferIPv4Stack=true"
