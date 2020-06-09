@@ -1,21 +1,15 @@
-package com.purbon.kafka.lag.agent;
+package com.purbon.kafka.lag.agent.integration;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
 
-import com.purbon.kafka.lag.agent.jmx.GlobalConsumerLagMBean;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import javax.management.MalformedObjectNameException;
 import org.junit.ClassRule;
-import org.junit.Test;
 import org.testcontainers.containers.DockerComposeContainer;
 
-public class LagAgentIT {
+public class BaseIntegrationTest {
 
   private static final String DEFAULT_JAVA_HOME_PATH = "/bin/java";
   private static final String DEFAULT_JAVA_PATH = "java";
@@ -26,8 +20,27 @@ public class LagAgentIT {
           .withExposedService("kafka", 9092)
           .withLocalCompose(true);
 
-  @Test
-  public void agentLoads() throws IOException, InterruptedException, MalformedObjectNameException {
+  protected void stopInternalApp(Process app) throws IOException, InterruptedException {
+    try {
+      app.getOutputStream().write('\n');
+      try {
+        app.getOutputStream().flush();
+      } catch (IOException ignored) {
+      }
+    } finally {
+      final int exitcode = app.waitFor();
+      // Log any errors printed
+      int len;
+      byte[] buffer = new byte[100];
+      while ((len = app.getErrorStream().read(buffer)) != -1) {
+        System.out.write(buffer, 0, len);
+      }
+
+      assertThat("Application did not exit cleanly", exitcode == 0);
+    }
+  }
+
+  protected Process buildAndStartInternalTestAppProcess() throws IOException {
     // If not starting the testcase via Maven, set the buildDirectory and finalName system properties manually.
     final String buildDirectory = (String) System.getProperties().get("buildDirectory");
     final String finalName = (String) System.getProperties().get("finalName")+"-jar-with-dependencies";
@@ -47,47 +60,13 @@ public class LagAgentIT {
         "-cp", buildClasspath(),
         "com.purbon.kafka.lag.agent.TestApp");
     final Process app = pb.start();
-
-    try {
-      // Wait for application to start
-      app.getInputStream().read();
-
-      boolean found = true;
-      assertThat("Expected metric not found", found);
-
-      JMXClient client = new JMXClient();
-      client.connect("", 9999);
-
-      GlobalConsumerLagMBean bean = (GlobalConsumerLagMBean)client.query("com.purbon.kafka:type=Lag,name=ConsumerLag", GlobalConsumerLagMBean.class);
-      assertThat("There should be no consumers", bean.getConsumerLagByPartition().size() == 0);
-      // Tell application to stop
-      app.getOutputStream().write('\n');
-      try {
-        app.getOutputStream().flush();
-      } catch (IOException ignored) {
-      }
-    } finally {
-      final int exitcode = app.waitFor();
-      // Log any errors printed
-      int len;
-      byte[] buffer = new byte[100];
-      while ((len = app.getErrorStream().read(buffer)) != -1) {
-        System.out.write(buffer, 0, len);
-      }
-
-      assertThat("Application did not exit cleanly", exitcode == 0);
-    }
-  }
-
-  private Process buildInternalAppProcess() {
-
+    return app;
   }
 
   private String buildJavaPath(String javaHome) {
     if (!(javaHome == null || javaHome.isEmpty())) {
       return javaHome + DEFAULT_JAVA_HOME_PATH;
     }
-
     return DEFAULT_JAVA_PATH;
   }
 
@@ -100,7 +79,7 @@ public class LagAgentIT {
 
 
   private String buildClasspath() {
-   return "target/lag-exporter-jar-with-dependencies.jar";
+    return "target/lag-exporter-jar-with-dependencies.jar";
   }
 
   private String[] buildArgs() {
@@ -137,5 +116,5 @@ public class LagAgentIT {
      */
     return args;
   }
-
 }
+
