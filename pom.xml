@@ -30,6 +30,9 @@
     <mockito.version>1.10.19</mockito.version>
     <junit.version>4.12</junit.version>
     <testcontainers.version>1.14.3</testcontainers.version>
+    <jvm.options>
+      -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9998 -Dcom.sun.management.jmxremote.rmi.port=9998 -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
+    </jvm.options>
   </properties>
 
 

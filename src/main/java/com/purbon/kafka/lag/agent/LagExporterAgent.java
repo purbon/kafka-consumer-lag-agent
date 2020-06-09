@@ -17,6 +17,7 @@ public class LagExporterAgent {
   private static final Logger LOGGER = LogManager.getLogger(LagExporterAgent.class);
 
   public static void premain(String args, Instrumentation inst) {
+    System.out.println("foo1");
 
     List<String> argsList = Arrays
         .asList(args.split(","))
@@ -35,8 +36,8 @@ public class LagExporterAgent {
 
     LOGGER.info("[Agent] In main method with "+args);
     registerBeans();
+    System.out.println("banana");
     startBackgroundControllerThread();
-
   }
 
   private static void registerBeans() {
